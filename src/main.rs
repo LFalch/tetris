@@ -214,6 +214,7 @@ struct GameState {
     grid: Grid,
     gameover: bool,
     move_frames: u8,
+    score: u32,
     rng: Rand32,
     next_piece: Piece,
     cur_piece: Option<MovingPiece>,
@@ -236,6 +237,7 @@ impl GameState {
             next_piece: Piece::get_random(&mut rng),
             cur_piece: None,
             move_frames: 0,
+            score: 0,
             rng,
         }
     }
@@ -302,11 +304,22 @@ impl event::EventHandler<ggez::GameError> for GameState {
                                 self.gameover = true;
                             } else {
                                 self.cur_piece = None;
+                                let mut num_cleared = 0;
                                 for y in line_set {
-                                    self.grid.check_for_line(y);
+                                    if self.grid.check_for_line(y) {
+                                        num_cleared += 1;
+                                    }
                                 }
+                                let score = match num_cleared {
+                                    0 => 0,
+                                    1 => 40,
+                                    2 => 100,
+                                    3 => 300,
+                                    4 => 1200,
+                                    _ => unimplemented!(),
+                                };
+                                self.score += score;
                             }
-
                         }
                     }
                 } else {
@@ -320,6 +333,8 @@ impl event::EventHandler<ggez::GameError> for GameState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
+        ctx.gfx.set_window_title(&format!("Tetris - Score: {}", self.score));
+
         let mut canvas =
             graphics::Canvas::from_frame(ctx, graphics::Color::BLACK);
 
